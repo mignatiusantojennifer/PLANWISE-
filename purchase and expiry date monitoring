@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Purchase & Expiry Monitoring</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+<style>
+  .soon-expiry { background-color: #ffc107 !important; }
+  .expired { background-color: #dc3545 !important; color: white; }
+</style>
+</head>
+<body class="p-4">
+
+<div class="container">
+  <h2 class="mb-4">Purchase & Expiry Date Monitoring</h2>
+
+  <!-- Button to open category popup -->
+  <button id="selectCategoryBtn" class="btn btn-primary mb-3">Select Category</button>
+
+  <!-- Table container -->
+  <div id="tableContainer"></div>
+</div>
+
+<!-- Category Selection Modal -->
+<div class="modal fade" id="categoryModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content p-3">
+      <h5>Select Category</h5>
+      <form id="categoryForm">
+        <div class="form-check">
+          <input class="form-check-input" type="radio" name="category" id="food" value="Food" required>
+          <label class="form-check-label" for="food">Food</label>
+        </div>
+        <div class="form-check">
+          <input class="form-check-input" type="radio" name="category" id="home" value="Home Essentials" required>
+          <label class="form-check-label" for="home">Home Essentials</label>
+        </div>
+        <button type="submit" class="btn btn-success mt-3">Show Items</button>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+const tableContainer = document.getElementById('tableContainer');
+const selectCategoryBtn = document.getElementById('selectCategoryBtn');
+const categoryModal = new bootstrap.Modal(document.getElementById('categoryModal'));
+const categoryForm = document.getElementById('categoryForm');
+
+// Sample data for testing
+if(!localStorage.getItem('items')){
+  const sampleItems = [
+    {category: 'Food', product: 'Milk', qty: '1L', money: 50, bought: '2025-10-24', expiry: '2025-10-26'},
+    {category: 'Food', product: 'Eggs', qty: '12 pcs', money: 80, bought: '2025-10-22', expiry: '2025-10-28'},
+    {category: 'Home Essentials', product: 'Soap', qty: '2 pcs', money: 60, bought: '2025-10-20', expiry: '2026-03-20'},
+    {category: 'Home Essentials', product: 'Detergent', qty: '1kg', money: 150, bought: '2025-10-18', expiry: '2026-04-18'}
+  ];
+  localStorage.setItem('items', JSON.stringify(sampleItems));
+}
+
+function loadItems() {
+  return JSON.parse(localStorage.getItem('items')) || [];
+}
+
+function saveItems(items) {
+  localStorage.setItem('items', JSON.stringify(items));
+}
+
+function getExpiryClass(expiryDate) {
+  const today = new Date();
+  const expDate = new Date(expiryDate);
+  const diffDays = Math.ceil((expDate - today)/(1000*60*60*24));
+  if(diffDays < 0) return 'expired';
+  if(diffDays <= 3) return 'soon-expiry';
+  return '';
+}
+
+function getBestUseText(expiryDate) {
+  const today = new Date();
+  const expDate = new Date(expiryDate);
+  const diffMs = expDate - today;
+  const diffDays = Math.ceil(diffMs / (1000*60*60*24));
+  if(diffDays < 0) return `Expired`;
+  return `${diffDays} day(s) left`;
+}
+
+function renderTable(category) {
+  const items = loadItems().filter(i => i.category === category);
+  if(items.length === 0) {
+    tableContainer.innerHTML = `<p>No items in ${category}.</p>`;
+    return;
+  }
+
+  let html = `<table class="table table-bordered">
+                <thead class="table-dark">
+                  <tr>
+                    <th>Category</th>
+                    <th>Product</th>
+                    <th>Qty</th>
+                    <th>Money</th>
+                    <th>Bought</th>
+                    <th>Best Use Before</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody>`;
+  
+  items.forEach((item, index) => {
+    const cls = getExpiryClass(item.expiry);
+    html += `<tr class="${cls}">
+               <td>${item.category}</td>
+               <td>${item.product}</td>
+               <td>${item.qty}</td>
+               <td>${item.money}</td>
+               <td>${new Date(item.bought).toLocaleDateString('en-GB')}</td>
+               <td>${getBestUseText(item.expiry)}</td>
+               <td><button class="btn btn-sm btn-danger" onclick="deleteItem(${index},'${category}')">Delete</button></td>
+             </tr>`;
+  });
+
+  html += `</tbody></table>`;
+  tableContainer.innerHTML = html;
+}
+
+function deleteItem(index, category) {
+  let items = loadItems().filter(i => i.category === category);
+  let allItems = loadItems();
+  allItems = allItems.filter((_, idx) => idx !== index || allItems[idx].category !== category);
+  saveItems(allItems);
+  renderTable(category);
+}
+
+// Show modal
+selectCategoryBtn.addEventListener('click', () => categoryModal.show());
+
+// Handle category selection
+categoryForm.addEventListener('submit', e => {
+  e.preventDefault();
+  const category = categoryForm.category.value;
+  categoryModal.hide();
+  renderTable(category);
+});
+</script>
+
+</body>
+</html>
