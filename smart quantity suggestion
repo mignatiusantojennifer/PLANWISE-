@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PlanWise – Smart Quantity Suggestion</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+<style>
+  .soon-expiry { background-color: #ffc107 !important; }
+  .expired { background-color: #dc3545 !important; color: white; }
+</style>
+</head>
+<body class="p-4">
+
+<div class="container">
+  <h2 class="mb-4">PlanWise – Smart Quantity Suggestion</h2>
+  <button id="selectCategoryBtn" class="btn btn-primary mb-3">Select Category</button>
+  <button id="addItemBtn" class="btn btn-success mb-3 ms-2">Add New Item</button>
+  <div id="tableContainer"></div>
+</div>
+
+<!-- Category Selection Modal -->
+<div class="modal fade" id="categoryModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content p-3">
+      <h5>Select Category</h5>
+      <form id="categoryForm">
+        <div class="form-check">
+          <input class="form-check-input" type="radio" name="category" id="food" value="Food" required>
+          <label class="form-check-label" for="food">Food</label>
+        </div>
+        <div class="form-check">
+          <input class="form-check-input" type="radio" name="category" id="home" value="Home Essentials" required>
+          <label class="form-check-label" for="home">Home Essentials</label>
+        </div>
+        <button type="submit" class="btn btn-success mt-3">Show Items</button>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Add Item Modal -->
+<div class="modal fade" id="addItemModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content p-3">
+      <h5>Add New Item</h5>
+      <form id="addItemForm">
+        <div class="mb-2">
+          <label>Category</label>
+          <select class="form-select" name="category" required>
+            <option value="Food">Food</option>
+            <option value="Home Essentials">Home Essentials</option>
+          </select>
+        </div>
+        <div class="mb-2">
+          <label>Product Name</label>
+          <input type="text" class="form-control" name="product" required>
+        </div>
+        <div class="mb-2">
+          <label>Quantity</label>
+          <input type="number" class="form-control" name="qty" required>
+        </div>
+        <div class="mb-2">
+          <label>Money</label>
+          <input type="number" class="form-control" name="money" required>
+        </div>
+        <div class="mb-2">
+          <label>Bought Date</label>
+          <input type="date" class="form-control" name="bought" required>
+        </div>
+        <div class="mb-2">
+          <label>Expiry Date</label>
+          <input type="date" class="form-control" name="expiry" required>
+        </div>
+        <div class="mb-2">
+          <label>Daily Usage</label>
+          <input type="number" class="form-control" name="dailyUsage" required>
+        </div>
+        <div class="mb-2">
+          <label>Perishable</label>
+          <select class="form-select" name="perishable" required>
+            <option value="true">Yes</option>
+            <option value="false">No</option>
+          </select>
+        </div>
+        <div class="mb-2">
+          <label>Purchase Frequency</label>
+          <select class="form-select" name="purchaseFrequency" required>
+            <option value="normal">Normal</option>
+            <option value="often">Often</option>
+            <option value="rare">Rare</option>
+          </select>
+        </div>
+        <button type="submit" class="btn btn-primary mt-3">Add Item</button>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+// DOM Elements
+const tableContainer = document.getElementById('tableContainer');
+const selectCategoryBtn = document.getElementById('selectCategoryBtn');
+const addItemBtn = document.getElementById('addItemBtn');
+const categoryModal = new bootstrap.Modal(document.getElementById('categoryModal'));
+const addItemModal = new bootstrap.Modal(document.getElementById('addItemModal'));
+const categoryForm = document.getElementById('categoryForm');
+const addItemForm = document.getElementById('addItemForm');
+
+// Load & Save
+function loadItems(){ try{ const items=JSON.parse(localStorage.getItem('items')); return Array.isArray(items)?items:[];}catch{return [];} }
+function saveItems(items){ localStorage.setItem('items', JSON.stringify(items)); }
+
+// Initialize defaults
+function initializeDefaults(){
+    let items = loadItems();
+    if(!localStorage.getItem('items') || items.length===0){
+        items=[
+            {id:1,category:'Food', product:'Milk', qty:1, money:50, bought:'2025-10-24', expiry:'2025-10-28', dailyUsage:1, perishable:true, purchaseFrequency:'normal'},
+            {id:2,category:'Food', product:'Eggs', qty:12, money:80, bought:'2025-10-22', expiry:'2025-10-27', dailyUsage:6, perishable:true, purchaseFrequency:'normal'},
+            {id:3,category:'Food', product:'Bread', qty:1, money:40, bought:'2025-10-23', expiry:'2025-10-26', dailyUsage:1, perishable:true, purchaseFrequency:'normal'},
+            {id:4,category:'Food', product:'Rice', qty:1, money:60, bought:'2025-10-20', expiry:'2026-04-20', dailyUsage:0.3, perishable:false, purchaseFrequency:'normal'},
+            {id:5,category:'Food', product:'Vegetables', qty:5, money:100, bought:'2025-10-25', expiry:'2025-10-30', dailyUsage:2, perishable:true, purchaseFrequency:'normal'},
+            {id:6,category:'Food', product:'Fruits', qty:5, money:120, bought:'2025-10-25', expiry:'2025-10-29', dailyUsage:2, perishable:true, purchaseFrequency:'normal'},
+            {id:7,category:'Home Essentials', product:'Soap', qty:2, money:60, bought:'2025-10-20', expiry:'2026-03-20', dailyUsage:0.5, perishable:false, purchaseFrequency:'normal'},
+            {id:8,category:'Home Essentials', product:'Detergent', qty:1, money:150, bought:'2025-10-18', expiry:'2026-04-18', dailyUsage:0.2, perishable:false, purchaseFrequency:'normal'},
+            {id:9,category:'Home Essentials', product:'Toothpaste', qty:1, money:100, bought:'2025-10-21', expiry:'2026-05-21', dailyUsage:0.1, perishable:false, purchaseFrequency:'normal'},
+            {id:10,category:'Home Essentials', product:'Shampoo', qty:1, money:120, bought:'2025-10-22', expiry:'2026-05-22', dailyUsage:0.1, perishable:false, purchaseFrequency:'normal'},
+            {id:11,category:'Home Essentials', product:'Tissue Paper', qty:5, money:80, bought:'2025-10-23', expiry:'2026-03-23', dailyUsage:1, perishable:false, purchaseFrequency:'normal'},
+            {id:12,category:'Home Essentials', product:'Cooking Oil', qty:1, money:200, bought:'2025-10-20', expiry:'2026-10-20', dailyUsage:0.1, perishable:false, purchaseFrequency:'normal'}
+        ];
+        saveItems(items);
+    }
+}
+initializeDefaults();
+
+// Expiry Helpers
+function getExpiryClass(expiry){ const diff=Math.ceil((new Date(expiry)-new Date())/(1000*60*60*24)); if(diff<0)return 'expired'; if(diff<=3)return 'soon-expiry'; return ''; }
+function getBestUseText(expiry){ const diff=Math.ceil((new Date(expiry)-new Date())/(1000*60*60*24)); return diff<0?'Expired':`${diff} day(s) left`; }
+
+// Smart Quantity Calculation
+function smartQty(item){
+    const diff=Math.ceil((new Date(item.expiry)-new Date())/(1000*60*60*24));
+    if(diff<=0) return 0;
+    let qty=item.dailyUsage*diff;
+    qty=Math.min(qty,item.dailyUsage*7);
+    if(item.purchaseFrequency==='often') qty*=1.1;
+    else if(item.purchaseFrequency==='rare') qty*=0.9;
+    if(item.perishable) qty*=0.9;
+    return Math.round(qty);
+}
+
+// Render Table
+function renderTable(category){
+    const items=loadItems().filter(i=>i.category===category);
+    if(items.length===0){ tableContainer.innerHTML=`<p>No items in ${category}.</p><button class="btn btn-secondary mt-2" onclick="goBack()">Back</button>`; return; }
+    let html=`<button class="btn btn-secondary mb-2" onclick="goBack()">Back</button>`;
+    html+=`<table class="table table-bordered"><thead class="table-dark"><tr>
+            <th>Category</th><th>Product</th><th>Qty</th><th>Money</th><th>Bought</th>
+            <th>Best Use Before</th><th>Suggested Qty</th><th>Action</th>
+            </tr></thead><tbody>`;
+    items.forEach(item=>{
+        html+=`<tr class="${getExpiryClass(item.expiry)}">
+                <td>${item.category}</td>
+                <td>${item.product}</td>
+                <td>${item.qty}</td>
+                <td>${item.money}</td>
+                <td>${new Date(item.bought).toLocaleDateString('en-GB')}</td>
+                <td>${getBestUseText(item.expiry)}</td>
+                <td>${smartQty(item)}</td>
+                <td><button class="btn btn-sm btn-danger" onclick="deleteItemById(${item.id},'${category}')">Delete</button></td>
+                </tr>`;
+    });
+    html+=`</tbody></table>`;
+    tableContainer.innerHTML=html;
+}
+
+// Delete Item
+function deleteItemById(id,category){
+    let items=loadItems();
+    items=items.filter(i=>i.id!==id);
+    saveItems(items);
+    renderTable(category);
+}
+
+// Back button
+function goBack(){ tableContainer.innerHTML=''; categoryModal.show(); }
+
+// Event Listeners
+selectCategoryBtn.addEventListener('click',()=>categoryModal.show());
+categoryForm.addEventListener('submit',e=>{
+    e.preventDefault();
+    const cat=categoryForm.category.value;
+    categoryModal.hide();
+    renderTable(cat);
+});
+
+// Add Item Feature
+addItemBtn.addEventListener('click',()=>addItemModal.show());
+addItemForm.addEventListener('submit', e=>{
+    e.preventDefault();
+    const formData = new FormData(addItemForm);
+    let items = loadItems();
+    const newItem = {
+        id: items.length ? Math.max(...items.map(i=>i.id))+1 : 1,
+        category: formData.get('category'),
+        product: formData.get('product'),
+        qty: parseFloat(formData.get('qty')),
+        money: parseFloat(formData.get('money')),
+        bought: formData.get('bought'),
+        expiry: formData.get('expiry'),
+        dailyUsage: parseFloat(formData.get('dailyUsage')),
+        perishable: formData.get('perishable')==='true',
+        purchaseFrequency: formData.get('purchaseFrequency')
+    };
+    items.push(newItem);
+    saveItems(items);
+    addItemModal.hide();
+    addItemForm.reset();
+    renderTable(newItem.category);
+});
+</script>
+
+</body>
+</html>
