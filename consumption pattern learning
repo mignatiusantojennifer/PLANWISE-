@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PlanWise – Consumption Dashboard Detailed</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+<style>
+  .chart-container { display:flex; justify-content: space-around; flex-wrap: wrap; }
+  canvas { max-width: 350px; margin: 20px; }
+  #adviceMsg { font-size: 1.2rem; color: #dc3545; font-weight:bold; text-align:center; }
+</style>
+</head>
+<body class="p-4">
+
+<div class="container">
+  <h2 class="mb-4">PlanWise – Detailed Nutrition Dashboard</h2>
+
+  <div class="chart-container">
+    <div>
+      <h5 class="text-center">Your Food Nutrients</h5>
+      <canvas id="userChart"></canvas>
+    </div>
+    <div>
+      <h5 class="text-center">Healthy Diet Nutrients</h5>
+      <canvas id="healthyChart"></canvas>
+    </div>
+  </div>
+
+  <p id="adviceMsg"></p>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+// ===== Detailed Nutrient Data =====
+// User data (sample, can be calculated dynamically from PlanWise items)
+const userData = {
+  VitaminA: 20,
+  VitaminB1: 15,
+  VitaminB2: 18,
+  VitaminB3: 12,
+  VitaminB6: 10,
+  VitaminB12: 8,
+  VitaminC: 25,
+  VitaminD: 10,
+  VitaminE: 15,
+  Calcium: 18,
+  Iron: 12,
+  Magnesium: 14,
+  Zinc: 10,
+  Fiber: 20,
+  Carbs: 35,
+  Proteins: 25,
+  Fats: 18,
+  Omega3: 5
+};
+
+// Recommended Healthy Diet Distribution
+const healthyData = {
+  VitaminA: 25,
+  VitaminB1: 20,
+  VitaminB2: 20,
+  VitaminB3: 15,
+  VitaminB6: 15,
+  VitaminB12: 10,
+  VitaminC: 30,
+  VitaminD: 15,
+  VitaminE: 20,
+  Calcium: 25,
+  Iron: 15,
+  Magnesium: 20,
+  Zinc: 15,
+  Fiber: 25,
+  Carbs: 30,
+  Proteins: 20,
+  Fats: 15,
+  Omega3: 10
+};
+
+// ===== Colors for charts =====
+const colors = [
+  '#f6c23e','#36a2eb','#ff6384','#4bc0c0','#9966ff',
+  '#ff9f40','#c9cbcf','#8e5ea2','#3cba9f','#e8c3b9',
+  '#c45850','#ffcd56','#4dc9f6','#f67019','#f53794',
+  '#537bc4','#acc236','#166a8f','#00a950'
+];
+
+// ===== Create Pie Charts =====
+const userCtx = document.getElementById('userChart').getContext('2d');
+new Chart(userCtx, {
+    type:'pie',
+    data:{
+        labels:Object.keys(userData),
+        datasets:[{ data:Object.values(userData), backgroundColor: colors }]
+    }
+});
+
+const healthyCtx = document.getElementById('healthyChart').getContext('2d');
+new Chart(healthyCtx, {
+    type:'pie',
+    data:{
+        labels:Object.keys(healthyData),
+        datasets:[{ data:Object.values(healthyData), backgroundColor: colors }]
+    }
+});
+
+// ===== Generate Advice =====
+let advice = [];
+for(let key in healthyData){
+    if(userData[key] < healthyData[key]) advice.push(key.replace(/([A-Z])/g, ' $1').trim());
+}
+document.getElementById('adviceMsg').innerText = 
+  advice.length ? `Please avoid junk food and increase: ${advice.join(', ')}.` : 'Great! Your diet is balanced.';
+</script>
+
+</body>
+</html>
